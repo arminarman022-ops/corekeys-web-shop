@@ -14,21 +14,36 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Učitavanje podataka o ključevima iz podaci.json
+// POPRAVLJENO: Sigurnije učitavanje podataka
 const ucitajPodatke = () => {
-    const data = fs.readFileSync(path.join(__dirname, 'podaci.json'));
-    return JSON.parse(data);
+    try {
+        const filePath = path.join(__dirname, 'podaci.json');
+        if (!fs.existsSync(filePath)) {
+            console.error("Fajl podaci.json ne postoji!");
+            return { artikli: [] };
+        }
+        const data = fs.readFileSync(filePath, 'utf8');
+        const parsedData = JSON.parse(data);
+        return parsedData || { artikli: [] };
+    } catch (err) {
+        console.error("Greška pri čitanju JSON fajla:", err);
+        return { artikli: [] };
+    }
 };
 
 // Rute
 app.get('/', (req, res) => {
     const podaci = ucitajPodatke();
-    res.render('index', { artikli: podaci.artikli });
+    // Dodana provjera da artikli nisu undefined
+    const listaArtikala = podaci.artikli || [];
+    res.render('index', { artikli: listaArtikala });
 });
 
 app.get('/kategorija/:id', (req, res) => {
     const podaci = ucitajPodatke();
-    const artikal = podaci.artikli.find(a => a.id == req.params.id);
+    const listaArtikala = podaci.artikli || [];
+    const artikal = listaArtikala.find(a => a.id == req.params.id);
+    
     if (artikal) {
         res.render('kategorija', { artikal });
     } else {
@@ -36,24 +51,25 @@ app.get('/kategorija/:id', (req, res) => {
     }
 });
 
-// LOGIN ZA SLANJE EMAILA (Ovdje je popravka za Timeout)
+// Postavke za slanje emaila
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,
-    secure: false, // port 587 zahtijeva false
+    secure: false, 
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
     tls: {
-        rejectUnauthorized: false // Ovo rješava blokadu veze
+        rejectUnauthorized: false 
     }
 });
 
 app.post('/naruci', async (req, res) => {
     const { email, artikalId } = req.body;
     const podaci = ucitajPodatke();
-    const artikal = podaci.artikli.find(a => a.id == artikalId);
+    const listaArtikala = podaci.artikli || [];
+    const artikal = listaArtikala.find(a => a.id == artikalId);
 
     if (!artikal) return res.status(400).send('Greška pri odabiru artikla.');
 
@@ -78,7 +94,7 @@ app.post('/naruci', async (req, res) => {
         res.send('Uspješno! Provjerite svoj email (i spam folder).');
     } catch (error) {
         console.error("Greška kod slanja:", error);
-        res.status(500).send('Greska kod mene: ' + error.message);
+        res.status(500).send('Greska kod servera: ' + error.message);
     }
 });
 
