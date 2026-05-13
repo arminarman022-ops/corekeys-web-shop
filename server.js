@@ -1,71 +1,87 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
-const fs = require('fs');
 const path = require('path');
-const app = express();
+const fs = require('fs');
+require('dotenv').config();
 
+const app = express();
+const PORT = process.env.PORT || 10000;
+
+// Postavke za EJS i statične fajlove
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.set('view engine', 'ejs');
-app.use(express.static('public'));
 
-const getPodaci = () => {
-    try {
-        const data = fs.readFileSync(path.join(__dirname, 'podaci.json'), 'utf8');
-        return JSON.parse(data);
-    } catch (err) { return { kategorije: [] }; }
+// Učitavanje podataka o ključevima iz podaci.json
+const ucitajPodatke = () => {
+    const data = fs.readFileSync(path.join(__dirname, 'podaci.json'));
+    return JSON.parse(data);
 };
 
-app.get('/', (req, res) => { res.render('index'); });
-
-app.get('/kategorija/:ime', (req, res) => {
-    const podaci = getPodaci();
-    const trazena = req.params.ime.toLowerCase();
-    const pronadjena = podaci.kategorije.find(k => k.ime.toLowerCase() === trazena);
-    if (pronadjena) { res.render('kategorija', { kategorija: pronadjena }); }
-    else { res.status(404).send("Kategorija nije pronadjena"); }
+// Rute
+app.get('/', (req, res) => {
+    const podaci = ucitajPodatke();
+    res.render('index', { artikli: podaci.artikli });
 });
 
-app.post('/naruci', (req, res) => {
-    const { email, artikal, kliker } = req.body;
-    const klikerKod = Array.isArray(kliker) ? kliker.join('') : kliker;
+app.get('/kategorija/:id', (req, res) => {
+    const podaci = ucitajPodatke();
+    const artikal = podaci.artikli.find(a => a.id == req.params.id);
+    if (artikal) {
+        res.render('kategorija', { artikal });
+    } else {
+        res.status(404).send('Artikal nije pronađen');
+    }
+});
 
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: 'arminarman022@gmail.com',
-            pass: 'dysohsqsxejhesrf'
-        }
-    });
+// LOGIN ZA SLANJE EMAILA (Ovdje je popravka za Timeout)
+const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // port 587 zahtijeva false
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    },
+    tls: {
+        rejectUnauthorized: false // Ovo rješava blokadu veze
+    }
+});
 
-    const mailZaMene = {
-        from: 'arminarman022@gmail.com',
-        to: 'arminarman022@gmail.com',
-        subject: `NOVA NARUDŽBA: ${artikal}`,
-        text: `Artikal: ${artikal}\nKupac: ${email}\nKliker Bon Kod: ${klikerKod}`
-    };
+app.post('/naruci', async (req, res) => {
+    const { email, artikalId } = req.body;
+    const podaci = ucitajPodatke();
+    const artikal = podaci.artikli.find(a => a.id == artikalId);
 
-    const mailZaKupca = {
-        from: 'arminarman022@gmail.com',
+    if (!artikal) return res.status(400).send('Greška pri odabiru artikla.');
+
+    const mailOptions = {
+        from: `"CoreKeys Shop" <${process.env.EMAIL_USER}>`,
         to: email,
-        subject: 'Hvala na ukazanom povjerenju - CoreKeys',
-        text: `Hvala na ukazanom povjerenju, vas kod se provjerava ocekujte u narednim minutama vasu licencu.\n\nLp. vas tim CoreKeys`
+        subject: `Vaš ključ za ${artikal.naslov}`,
+        html: `
+            <div style="background: #0a0a0a; color: white; padding: 20px; font-family: sans-serif; border: 2px solid red;">
+                <h2 style="color: red;">Hvala na kupovini!</h2>
+                <p>Vaš digitalni ključ za <b>${artikal.naslov}</b> je:</p>
+                <div style="background: #1a1a1a; padding: 15px; border-left: 5px solid red; font-size: 20px; font-weight: bold; letter-spacing: 2px;">
+                    ${artikal.kljuc}
+                </div>
+                <p style="font-size: 12px; color: gray; margin-top: 20px;">Ugodno igranje želi vam CoreKeys Shop.</p>
+            </div>
+        `
     };
 
-    transporter.sendMail(mailZaMene, (err) => {
-        if (err) return res.send("Greska kod mene: " + err);
-        transporter.sendMail(mailZaKupca, (err2) => {
-            if (err2) return res.send("Greska kod kupca: " + err2);
-            res.send(`
-                <div style="background:#0a0a0a; color:#ff0000; padding:50px; text-align:center; font-family:sans-serif; border:2px solid #ff0000;">
-                    <h1>NARUDŽBA POSLANA!</h1>
-                    <p style="color:white;">Provjerite vaš email za potvrdu.</p>
-                    <a href="/" style="color:#ff0000;">Povratak na početnu</a>
-                </div>
-            `);
-        });
-    });
+    try {
+        await transporter.sendMail(mailOptions);
+        res.send('Uspješno! Provjerite svoj email (i spam folder).');
+    } catch (error) {
+        console.error("Greška kod slanja:", error);
+        res.status(500).send('Greska kod mene: ' + error.message);
+    }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server radi na http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server radi na portu ${PORT}`);
+});
