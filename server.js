@@ -14,90 +14,90 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// POPRAVLJENO: Sigurnije učitavanje podataka
+// FUNKCIJA ZA UCITAVANJE PODATAKA (Popravljeno da ne izbacuje Error)
 const ucitajPodatke = () => {
     try {
         const filePath = path.join(__dirname, 'podaci.json');
         if (!fs.existsSync(filePath)) {
-            console.error("Fajl podaci.json ne postoji!");
+            console.error("Fajl podaci.json nedostaje!");
             return { artikli: [] };
         }
         const data = fs.readFileSync(filePath, 'utf8');
-        const parsedData = JSON.parse(data);
-        return parsedData || { artikli: [] };
+        return JSON.parse(data);
     } catch (err) {
-        console.error("Greška pri čitanju JSON fajla:", err);
+        console.error("Greska pri ucitavanju JSON-a:", err);
         return { artikli: [] };
     }
 };
 
-// Rute
+// RUTA ZA POCETNU STRANICU
 app.get('/', (req, res) => {
     const podaci = ucitajPodatke();
-    // Dodana provjera da artikli nisu undefined
-    const listaArtikala = podaci.artikli || [];
-    res.render('index', { artikli: listaArtikala });
+    res.render('index', { artikli: podaci.artikli || [] });
 });
 
+// RUTA ZA DETALJE ARTIKLA (Rjesava problem "Artikal nije pronadjen")
 app.get('/kategorija/:id', (req, res) => {
     const podaci = ucitajPodatke();
     const listaArtikala = podaci.artikli || [];
+    // Koristimo == da poredimo ID bez obzira je li broj ili tekst
     const artikal = listaArtikala.find(a => a.id == req.params.id);
     
     if (artikal) {
         res.render('kategorija', { artikal });
     } else {
-        res.status(404).send('Artikal nije pronađen');
+        res.status(404).send('Zao nam je, artikal sa tim ID-om nije pronadjen u podaci.json');
     }
 });
 
-// Postavke za slanje emaila
+// KONFIGURACIJA ZA EMAIL (Koristi tvoje podatke sa Rendera)
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,
-    secure: false, 
+    secure: false,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
     tls: {
-        rejectUnauthorized: false 
+        rejectUnauthorized: false
     }
 });
 
+// RUTA ZA NARUDZBU
 app.post('/naruci', async (req, res) => {
     const { email, artikalId } = req.body;
     const podaci = ucitajPodatke();
-    const listaArtikala = podaci.artikli || [];
-    const artikal = listaArtikala.find(a => a.id == artikalId);
+    const artikal = (podaci.artikli || []).find(a => a.id == artikalId);
 
-    if (!artikal) return res.status(400).send('Greška pri odabiru artikla.');
+    if (!artikal) return res.status(400).send('Greska: Artikal ne postoji.');
 
     const mailOptions = {
         from: `"CoreKeys Shop" <${process.env.EMAIL_USER}>`,
         to: email,
-        subject: `Vaš ključ za ${artikal.naslov}`,
+        subject: `Vas kljuc: ${artikal.naslov}`,
         html: `
-            <div style="background: #0a0a0a; color: white; padding: 20px; font-family: sans-serif; border: 2px solid red;">
-                <h2 style="color: red;">Hvala na kupovini!</h2>
-                <p>Vaš digitalni ključ za <b>${artikal.naslov}</b> je:</p>
-                <div style="background: #1a1a1a; padding: 15px; border-left: 5px solid red; font-size: 20px; font-weight: bold; letter-spacing: 2px;">
+            <div style="background: #000; color: #fff; padding: 25px; border: 2px solid #0056b3; font-family: sans-serif;">
+                <h1 style="color: #0056b3;">Uspjesna kupovina!</h1>
+                <p>Kljuc za <b>${artikal.naslov}</b>:</p>
+                <div style="background: #111; padding: 15px; border: 1px dashed #0056b3; font-size: 22px; font-weight: bold; text-align: center;">
                     ${artikal.kljuc}
                 </div>
-                <p style="font-size: 12px; color: gray; margin-top: 20px;">Ugodno igranje želi vam CoreKeys Shop.</p>
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">Hvala vam na povjerenju, CoreKeys Shop.</p>
             </div>
         `
     };
 
     try {
         await transporter.sendMail(mailOptions);
-        res.send('Uspješno! Provjerite svoj email (i spam folder).');
+        res.send('Uspjesno! Kljuc je poslan na vas email.');
     } catch (error) {
-        console.error("Greška kod slanja:", error);
-        res.status(500).send('Greska kod servera: ' + error.message);
+        console.error("Greska kod slanja maila:", error);
+        res.status(500).send('Greska na serveru: ' + error.message);
     }
 });
 
+// POKRETANJE SERVERA
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server radi na portu ${PORT}`);
+    console.log(`Server je spreman i radi na portu ${PORT}`);
 });
