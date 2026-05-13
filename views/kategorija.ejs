@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoreKeys - <%= kategorija.prikaz_ime %></title>
+    <style>
+        body { background: #0a0a0a; color: white; font-family: sans-serif; text-align: center; padding: 40px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; max-width: 1200px; margin: auto; }
+        .prozor { 
+            background: rgba(20, 20, 20, 0.9); 
+            border: 2px solid #ff0000; 
+            padding: 20px; 
+            border-radius: 10px; 
+            transition: 0.3s;
+        }
+        .prozor:hover { box-shadow: 0 0 20px #ff0000; }
+        button { 
+            background: transparent; border: 1px solid #ff0000; color: white; 
+            padding: 10px 20px; margin: 10px; cursor: pointer; text-transform: uppercase; 
+        }
+        button:hover { background: #ff0000; color: black; }
+        
+        /* Modalni prozor */
+        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); }
+        .modal-content { background: #1a1a1a; margin: 15% auto; padding: 30px; border: 2px solid #ff0000; width: 80%; max-width: 500px; border-radius: 15px; }
+        
+        /* Kliker bon polja */
+        .kliker-input-group { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin: 15px 0; }
+        .kliker-input-group input { width: 30px; text-align: center; padding: 5px; border: 1px solid #ff0000; background: #000; color: #ff0000; }
+    </style>
+</head>
+<body>
+    <h1><%= kategorija.prikaz_ime %></h1>
+    <div class="grid">
+        <% kategorija.artikli.forEach((artikal, index) => { %>
+            <div class="prozor">
+                <h3><%= artikal.ime %></h3>
+                <button onclick="otvoriOpis('<%= artikal.ime %>', '<%= artikal.opis %>')">Karakteristike</button>
+                <button onclick="otvoriNarudzbu('<%= artikal.ime %>')">Naruči artikl</button>
+            </div>
+        <% }) %>
+    </div>
+
+    <!-- Modal za Karakteristike -->
+    <div id="modalKarakteristike" class="modal">
+        <div class="modal-content">
+            <h2 id="naslovKarakteristike"></h2>
+            <p id="tekstKarakteristike"></p>
+            <button onclick="zatvoriModal('modalKarakteristike')">Zatvori</button>
+        </div>
+    </div>
+
+    <!-- Modal za Narudžbu -->
+    <div id="modalNarudzba" class="modal">
+        <div class="modal-content">
+            <h2>NARUDŽBA: <span id="artikalIme"></span></h2>
+            <form action="/naruci" method="POST">
+                <input type="hidden" name="artikal" id="inputArtikal">
+                <input type="email" name="email" placeholder="Vaš Email" required style="width: 90%; padding: 10px; margin-bottom: 10px;">
+                <p>Unesite Kliker Bon (14 polja):</p>
+                <div class="kliker-input-group">
+                    <% for(let i=1; i<=14; i++) { %>
+                        <input type="text" name="kliker[]" maxlength="1" required>
+                    <% } %>
+                </div>
+                <button type="submit">Završi narudžbu</button>
+            </form>
+            <button onclick="zatvoriModal('modalNarudzba')">Otkaži</button>
+        </div>
+    </div>
+
+    <script>
+        function otvoriOpis(ime, opis) {
+            document.getElementById('naslovKarakteristike').innerText = ime;
+            document.getElementById('tekstKarakteristike').innerText = opis;
+            document.getElementById('modalKarakteristike').style.display = 'block';
+        }
+        function otvoriNarudzbu(ime) {
+            document.getElementById('artikalIme').innerText = ime;
+            document.getElementById('inputArtikal').value = ime;
+            document.getElementById('modalNarudzba').style.display = 'block';
+        }
+        function zatvoriModal(id) { document.getElementById(id).style.display = 'none'; }
+    </script>
+</body>
+</html>

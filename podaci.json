@@ -1,0 +1,31 @@
+{
+  "kategorije": [
+    {
+      "ime": "windows",
+      "prikaz_ime": "Windows Sistemi",
+      "artikli": [
+        { "ime": "Windows 11 Pro", "cijena": "Kontakt", "opis": "Najnoviji sistem za profesionalce. Podržava BitLocker i Remote Desktop." },
+        { "ime": "Windows 11 Home", "cijena": "Kontakt", "opis": "Savršen za kućnu upotrebu i gaming. Brz i siguran." },
+        { "ime": "Windows 11 Enterprise", "cijena": "Kontakt", "opis": "Napredne sigurnosne opcije za velike poslovne sisteme." },
+        { "ime": "Windows 11 Education", "cijena": "Kontakt", "opis": "Prilagođen studentima i školskim ustanovama." },
+        { "ime": "Windows 11 Pro N", "cijena": "Kontakt", "opis": "Pro verzija bez preinstaliranih media playera." },
+        { "ime": "Windows 10 Pro", "cijena": "Kontakt", "opis": "Najstabilniji sistem do sada. Odličan za rad i zabavu." },
+        { "ime": "Windows 10 Home", "cijena": "Kontakt", "opis": "Standardna verzija za svakodnevne korisnike." },
+        { "ime": "Windows 10 Enterprise", "cijena": "Kontakt", "opis": "Maksimalna kontrola i sigurnost za firme." },
+        { "ime": "Windows 10 Education", "cijena": "Kontakt", "opis": "Verzija optimizovana za učenje." },
+        { "ime": "Windows 10 LTSC", "cijena": "Kontakt", "opis": "Verzija sa dugotrajnom podrškom bez nepotrebnih aplikacija." }
+      ]
+    },
+    {
+      "ime": "office",
+      "prikaz_ime": "Microsoft Office",
+      "artikli": [
+        { "ime": "Office 2021 Pro Plus", "cijena": "Kontakt", "opis": "Word, Excel, PowerPoint, Outlook - najnovija trajna verzija." },
+        { "ime": "Office 2019 Pro Plus", "cijena": "Kontakt", "opis": "Klasični paket alata za stabilan rad." },
+        { "ime": "Office 365 (1 Godina)", "cijena": "Kontakt", "opis": "Godišnja pretplata, 1TB OneDrive i svi Office alati." },
+        { "ime": "Office 2016 Pro Plus", "cijena": "Kontakt", "opis": "Pouzdan paket za starije računare." },
+        { "ime": "Visio Professional 2021", "cijena": "Kontakt", "opis": "Alat za kreiranje naprednih dijagrama i grafikona." }
+      ]
+    }
+  ]
+}
